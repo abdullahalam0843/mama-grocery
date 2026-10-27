@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17744A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Mama's Grocery App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one narrow column; sticky title + search on top, list bar pinned to the bottom. Big tap targets for Mama. */
+:root{
+  --bg:#F3F5F0; --surface:#FFFFFF; --surface-2:#EAEEE7; --ink:#17201B; --muted:#5B6A61; --line:#D9E0D6;
+  --accent:#17744A; --accent-ink:#FFFFFF; --pick:#FFF5DA; --pick-line:#E3B341;
+  --badge:#F2C14E; --badge-ink:#3A2A00; --danger:#B42318; --scrim:rgba(12,18,14,.55);
+  --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1310; --surface:#161D19; --surface-2:#1F2823; --ink:#E6ECE7; --muted:#97A59D; --line:#2A352F;
+  --accent:#3FB877; --accent-ink:#04200F; --pick:#262110; --pick-line:#A97F22;
+  --badge:#E9B949; --badge-ink:#2A1E00; --danger:#F07466; --scrim:rgba(0,0,0,.65); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1310; --surface:#161D19; --surface-2:#1F2823; --ink:#E6ECE7; --muted:#97A59D; --line:#2A352F;
+  --accent:#3FB877; --accent-ink:#04200F; --pick:#262110; --pick-line:#A97F22;
+  --badge:#E9B949; --badge-ink:#2A1E00; --danger:#F07466; --scrim:rgba(0,0,0,.65); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.4 var(--font);
+  padding-bottom:calc(92px + env(safe-area-inset-bottom,0px));-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--surface)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+svg{display:block}
+
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Top */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{padding-block:10px 12px;display:grid;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:36px;height:36px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.brand h1{flex:1;margin:0;font-size:18px;line-height:1.2;font-weight:700;letter-spacing:-.01em;min-width:0}
+.iconbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;flex:none}
+.hist{display:flex;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);overflow:hidden;flex:none}
+.hist button{width:46px;height:42px;border:0;background:none;display:grid;place-items:center}
+.hist button + button{border-left:1px solid var(--line)}
+.hist button:disabled{opacity:.3;cursor:default}
+@media (max-width:420px){ .mark{display:none} }
+.banner{background:var(--pick);border:1.5px solid var(--pick-line);border-radius:16px;padding:14px;display:grid;gap:12px}
+.banner p{margin:0}
+.banner .actions{justify-content:flex-start}
+.searchrow{display:flex;gap:8px}
+.search{flex:1;position:relative;min-width:0}
+.search input{width:100%;height:48px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);padding:0 44px 0 42px}
+.search input:focus{outline:none;border-color:var(--accent)}
+.search .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search .clr{position:absolute;right:4px;top:4px;width:40px;height:40px;border:0;background:none;color:var(--muted);display:grid;place-items:center;border-radius:10px}
+.addbtn{height:48px;padding:0 16px;border-radius:14px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px}
+
+/* List */
+main.wrap{padding-block:14px;display:grid;gap:10px}
+.cat{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.cat-h{width:100%;display:flex;align-items:center;gap:10px;min-height:58px;padding:10px 14px;border:0;background:none;text-align:left}
+.chev{color:var(--muted);transition:transform .15s ease;flex:none}
+.cat.open .chev{transform:rotate(90deg)}
+.cat-n{flex:1;min-width:0;font-weight:700}
+.cat-c{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.badge{background:var(--badge);color:var(--badge-ink);font-size:14px;font-weight:700;border-radius:999px;padding:2px 9px;font-variant-numeric:tabular-nums}
+.cat-b{border-top:1px solid var(--line)}
+.cat-title{padding:12px 14px 4px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start}
+.row + .row{border-top:1px solid var(--line)}
+.row.on{background:var(--pick)}
+.pick{display:flex;gap:12px;align-items:flex-start;padding:14px 4px 14px 14px;border:0;background:none;text-align:left;min-height:56px;min-width:0}
+.box{width:26px;height:26px;border-radius:8px;border:2px solid var(--muted);flex:none;display:grid;place-items:center;margin-top:-1px;color:var(--accent-ink)}
+.box svg{opacity:0}
+.row.on .box{background:var(--accent);border-color:var(--accent)}
+.row.on .box svg{opacity:1}
+.txt{min-width:0;display:grid;gap:2px}
+.nm{font-weight:700;overflow-wrap:anywhere}
+.meta{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.more{width:48px;height:56px;border:0;background:none;color:var(--muted);display:grid;place-items:center}
+.step{grid-column:1 / -1;display:flex;align-items:center;margin:0 14px 12px 52px;width:max-content;max-width:calc(100% - 66px);border:1.5px solid var(--pick-line);border-radius:12px;background:var(--surface);overflow:hidden}
+.step button{width:48px;height:44px;border:0;background:none;font-size:24px;font-weight:700;line-height:1}
+.step .q{min-width:88px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;padding:0 4px}
+.cat-f{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border-top:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+.linkbtn{background:none;border:0;font-size:15px;font-weight:700;color:var(--accent);padding:10px 8px;min-height:44px}
+.linkbtn.danger{color:var(--danger)}
+.none{padding:14px;color:var(--muted);font-size:15px}
+
+.listhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.listhead h2{flex:1;margin:0;font-size:20px;min-width:0}
+.empty{text-align:center;color:var(--muted);padding:36px 12px;display:grid;gap:14px;justify-items:center}
+.empty p{margin:0;max-width:30ch}
+.newcat{justify-self:center}
+
+/* Bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.bar .wrap{display:flex;gap:8px;align-items:center;padding-block:10px}
+.listbtn{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:0;text-align:left;padding:2px;border-radius:12px}
+.lb-n{min-width:46px;height:46px;border-radius:12px;background:var(--badge);color:var(--badge-ink);font-weight:700;font-size:20px;display:grid;place-items:center;padding:0 8px;font-variant-numeric:tabular-nums}
+.lb-t{display:grid;min-width:0;line-height:1.2}
+.lb-t b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-t small{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{height:48px;padding:0 14px;border-radius:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;text-decoration:none;white-space:nowrap}
+.btn.ghost{background:var(--surface-2);border:1px solid var(--line)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.off{opacity:.5}
+.btn.danger{background:none;color:var(--danger);border:1.5px solid currentColor}
+
+/* Sheets */
+.ov{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:20px 20px 0 0;max-height:92%;overflow:auto;display:grid;gap:14px;
+  padding:20px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet h2{margin:0;font-size:20px}
+.sheet p{margin:0;color:var(--muted)}
+.field{display:grid;gap:6px;min-width:0}
+.field > span{font-size:14px;font-weight:700;color:var(--muted)}
+.in{height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;width:100%;min-width:0}
+.in:focus{outline:none;border-color:var(--accent)}
+textarea.in{height:auto;min-height:180px;padding:12px;font-size:15px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{display:flex;gap:12px;align-items:center;font-weight:700;min-height:44px}
+.check input{width:24px;height:24px;accent-color:var(--accent)}
+.actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.actions .grow{margin-right:auto}
+.hint{font-size:14px;color:var(--muted)}
+.sep{border:0;border-top:1px solid var(--line);margin:4px 0}
+
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;z-index:60;font-weight:700;width:max-content;max-width:calc(100% - 32px);display:flex;align-items:center;gap:16px}
+.toast button{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:6px 2px;flex:none}
+
+@media (max-width:380px){ .btn .lbl-copy{display:none} .addbtn .lbl{display:none} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.5 11a2 2 0 0 1-2 1.7h-7a2 2 0 0 1-2-1.7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      </div>
+      <h1>Mama's Grocery App</h1>
+      <div class="hist" role="group" aria-label="Undo and redo">
+        <button id="undoBtn" data-act="undo" aria-label="Undo" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+        </button>
+        <button id="redoBtn" data-act="redo" aria-label="Redo" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+        </button>
+      </div>
+      <button class="iconbtn" data-act="settings" aria-label="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      </button>
+    </div>
+    <div class="searchrow">
+      <div class="search">
+        <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="search" type="search" placeholder="Search, e.g. daal, soap" autocomplete="off" aria-label="Search items">
+        <button class="clr" data-act="clear-search" id="clrSearch" hidden aria-label="Clear search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <button class="addbtn" data-act="add" aria-label="Add a new item">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">Add</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<nav class="bar" aria-label="Your list">
+  <div class="wrap">
+    <button class="listbtn" data-act="view" id="listBtn">
+      <span class="lb-n" id="countN">0</span>
+      <span class="lb-t"><b id="countLbl">on the list</b><small id="viewHint">Tap to see the list</small></span>
+    </button>
+    <button class="btn ghost" data-act="copy" aria-label="Copy list">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span class="lbl-copy">Copy</span>
+    </button>
+    <a class="btn primary" id="sendBtn" href="#" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg>Send
+    </a>
+  </div>
+</nav>
+
+<!-- Add / edit item -->
+<div class="ov" id="itemSheet" hidden>
+  <form class="sheet" id="itemForm" novalidate>
+    <h2 id="itemTitle">Add item</h2>
+    <label class="field"><span>Item name</span><input class="in" id="fName" autocomplete="off" placeholder="e.g. Kernel Basmati Rice"></label>
+    <label class="field"><span>Category</span><select class="in" id="fCat"></select></label>
+    <label class="field" id="fNewCatWrap" hidden><span>New category name</span><input class="in" id="fNewCat" autocomplete="off" placeholder="e.g. Baby care"></label>
+    <div class="two">
+      <label class="field"><span>Quantity</span><input class="in" id="fQty" type="number" inputmode="decimal" min="0" step="any"></label>
+      <label class="field"><span>Unit</span><select class="in" id="fUnit"></select></label>
+    </div>
+    <label class="field"><span>Note (brand, size, which one)</span><input class="in" id="fNote" autocomplete="off" placeholder="e.g. Olpers, 1.5 L"></label>
+    <label class="check"><input type="checkbox" id="fOn"> Put it on this list</label>
+    <div class="actions">
+      <button type="button" class="btn danger grow" id="fDelete" data-act="delete-item" hidden>Delete</button>
+      <button type="button" class="btn ghost" data-act="close">Cancel</button>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<!-- Confirm -->
+<div class="ov" id="confirmSheet" hidden>
+  <div class="sheet" role="alertdialog" aria-labelledby="cTitle">
+    <h2 id="cTitle"></h2>
+    <p id="cMsg"></p>
+    <div class="actions">
+      <button type="button" class="btn ghost" data-act="close">Cancel</button>
+      <button type="button" class="btn" id="cOk" data-act="confirm-ok"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Ask for a name -->
+<div class="ov" id="askSheet" hidden>
+  <form class="sheet" id="askForm" novalidate>
+    <h2 id="aTitle">New category</h2>
+    <label class="field"><span id="aLabel">Name</span><input class="in" id="aInput" autocomplete="off"></label>
+    <div class="actions">
+      <button type="button" class="btn ghost" data-act="close">Cancel</button>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<!-- Settings -->
+<div class="ov" id="settingsSheet" hidden>
+  <div class="sheet">
+    <h2>Settings</h2>
+    <div class="field"><span>Screen</span></div>
+    <div><button type="button" class="btn ghost" id="themeBtn" data-act="theme">Switch to dark mode</button></div>
+    <hr class="sep">
+    <div class="field"><span>Start over</span>
+      <div class="hint">Puts back Mama's full default list. Items you added or changed will be lost.</div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn danger grow" data-act="reset">Reset all items</button>
+      <button type="button" class="btn primary" data-act="close">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manual copy fallback -->
+<div class="ov" id="copySheet" hidden>
+  <div class="sheet">
+    <h2>Copy the list</h2>
+    <p>Press and hold the text, choose Select all, then Copy.</p>
+    <textarea class="in" id="copyText" readonly></textarea>
+    <div class="actions"><button type="button" class="btn primary" data-act="close">Done</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastMsg"></span><button id="toastUndo" data-act="undo" hidden>Undo</button></div>
+
+<script>
+(function(){
+"use strict";
+
+const UNITS = ["pcs","kg","g","L","ml","pack","bottle","jar","tin","box","carton","dozen","tray","roll","bunch","sachet"];
+
+// Mama's usual list: [category, [[name, default qty, unit], ...]]
+const DEFAULTS = [
+ ["Meat & Butchery", [
+  ["Chicken (Karahi cut)",1,"kg"],["Chicken boneless / Chicken steaks",1,"kg"],["Chicken fillets",1,"kg"],
+  ["Chicken qeema (Minced chicken)",1,"kg"],["Whole chicken (about 1.5 kg each)",3,"pcs"],
+  ["Veal meat (Boneless / Fat-free)",1,"kg"],["Veal pasanday",1,"kg"],["Veal qeema (Minced veal)",1,"kg"],
+  ["Mutton ran (Leg, cut)",1,"pcs"],["Fish fillet",1,"kg"]]],
+ ["Fruits & Vegetables", [
+  ["Aloo (Potatoes)",2,"kg"],["Piyaaz (Onions)",2,"kg"],["Timater (Tomatoes)",1,"kg"],["Kheera (Cucumber)",1,"kg"],
+  ["Hari mirch (Green chilies, thick & regular)",250,"g"],["Lehsan (Garlic / Garlic powder)",250,"g"],["Adrak (Fresh ginger)",250,"g","b14"],["Nimbu (Lemons)",500,"g","b13"],
+  ["Adrak (Ginger powder)",1,"pack"],["Podina (Mint)",1,"bunch"],["Hara dhania (Coriander leaves)",1,"bunch"],
+  ["Palak (Spinach)",1,"kg"],["Bhindi (Okra)",1,"kg"],["Tori (Ridge gourd)",1,"kg"],["Gheea (Bottle gourd)",1,"kg"],
+  ["Bangan (Eggplant)",1,"kg"],["Keraily (Bitter gourd)",1,"kg"],["Kerry (Raw mango)",1,"kg"],
+  ["Shimla mirch (Bell peppers: red, yellow, green)",500,"g"],["Carrot",1,"kg"],["Green onion",1,"bunch"],
+  ["Matar (Peas)",1,"kg"],["Asparagus",1,"bunch"],["Khajoor (Dates)",500,"g"],["Bananas",1,"dozen"],["Apples",1,"kg"],
+  ["Tarbooz (Watermelon)",1,"pcs"],["Peach (Aroo)",1,"kg"],["Mangoes",2,"kg"],["Anar (Pomegranate)",1,"kg"]]],
+ ["Dairy, Chilled & Frozen", [
+  ["Doodh (Milk cartons: Olpers / Milk Pak)",6,"pack"],["Nido / Everyday (Milk powder)",1,"pack"],["Yogurt",1,"kg"],
+  ["Butter (Nurpur & General)",1,"pack"],["Desi ghee",1,"kg"],["Milk Pak cream",2,"pack"],
+  ["Cheese (Slices & 50-slice pack)",1,"pack"],["Eggs",1,"tray"],["Ice cream (Kulfa & Hico)",1,"pcs"],
+  ["Imtiaz parathas (Frozen)",1,"pack"],["K&N's quiche",1,"pack"]]],
+ ["Grains, Daal & Bakery", [
+  ["Atta (Chakki, Fine, Sunridge)",10,"kg"],["Maida (All-purpose flour)",1,"kg"],["Sooji (Semolina)",500,"g"],
+  ["Barley (Jau) flour & Porridge (Dalia)",1,"pack"],["Corn (Makki) flour, white",1,"kg"],["Besan (Gram flour)",1,"kg"],
+  ["Rice flour",500,"g"],["Kernel Basmati rice",5,"kg"],["Toota rice",1,"kg"],["Safaid chanay (White chickpeas)",1,"kg"],
+  ["Kabli chana",1,"kg"],["Chany ki daal",1,"kg"],["Peeli masar ki daal",1,"kg"],["Moong ki daal",1,"kg"],
+  ["Mash ki daal",1,"kg"],["Chini (Sugar)",2,"kg"],["Canderel (Sweetener)",1,"box"],
+  ["Bran bread & White sandwich bread",2,"pack"],["Cake (Sada cake / Cupcakes)",1,"pack"],
+  ["Biscuits (Assorted & Malai biscuits)",2,"pack"],["Rusks (Rus)",1,"pack"],["Pahalwan rewri",1,"pack"],
+  ["Cornflour",1,"pack","b12"],["Baking powder & Baking soda",1,"pack","b11"]]],
+ ["Masala, Pansaar & Dry Fruits", [
+  ["Namak (Salt)",1,"kg","b1"],["Lal mirch powder (Red chilli)",250,"g","b2"],["Kutti lal mirch (Crushed red chilli)",100,"g","b3"],
+  ["Haldi (Turmeric)",250,"g","b4"],["Pisa dhania (Coriander powder)",250,"g","b5"],["Garam masala",100,"g","b6"],
+  ["Kali mirch (Black pepper)",100,"g","b7"],["Choti elaichi (Green cardamom)",50,"g","b8"],["Dar chini (Cinnamon)",50,"g","b9"],
+  ["Tez patta (Bay leaves)",1,"pack","b10"],
+  ["Tikka masala",1,"pack"],["Lahori chargha masala",1,"pack"],["Malai boti masala",1,"pack"],["Haleem mix masala",1,"pack"],
+  ["Karahi gosht masala",1,"pack"],["Lahori fish masala",1,"pack"],["Bari elaichi (Black cardamom)",50,"g"],
+  ["Loung (Cloves)",50,"g"],["White pepper",50,"g"],["Zeera (Cumin seeds)",100,"g"],["Sabat dhania (Coriander seeds)",100,"g"],
+  ["Ajwain (Carom seeds)",50,"g"],["Kalonji (Nigella seeds)",50,"g"],["Maithi dana (Fenugreek seeds)",50,"g"],
+  ["Vanilla essence",1,"bottle"],["Kewra essence",1,"bottle"],["Chicken powder & Chicken cubes",1,"pack"],
+  ["Breadcrumbs",1,"pack"],["Kheer mix & Rasmalai mix",1,"pack"],["Akhroot (Walnuts)",250,"g"],["Badam (Almonds)",250,"g"],
+  ["Flaxseeds (Alsi)",250,"g"],["Sesame seeds (Til)",100,"g"],["Pumpkin seeds (Kaddu ke beej)",250,"g"],
+  ["Sunflower seeds",250,"g"],["Melon seeds (Maghaz)",250,"g"],["Phool makhane (Fox nuts)",100,"g"],
+  ["Edible gum (Gondh / Keekar ka gond)",100,"g"],["Sagodana (Tapioca pearls)",250,"g"],["Chia seeds",250,"g"],
+  ["Tukh malanga (Basil seeds)",100,"g"],["Ashwagandha",100,"g"],["Dhamasa booti",100,"g"],["Bamboo roots powder",100,"g"],
+  ["Kamar kas",100,"g"],["Kishmish (Raisins)",250,"g"],["Anjeer (Dried figs)",250,"g"],
+  ["Sukha aloo bukhara (Dried plums)",250,"g"],["Sookha naariyal (Dry coconut)",250,"g"],
+  ["Bhunay huay chanay (Roasted chickpeas)",500,"g"]]],
+ ["Oils, Sauces & Condiments", [
+  ["Cooking oil / All-purpose oil",5,"L"],["Olive oil",1,"bottle"],["Sarson ka tail (Mustard oil)",1,"bottle"],
+  ["Chilli sauce & Chinese chilli sauce",1,"bottle"],["Chilli garlic sauce",1,"bottle"],["Tomato ketchup",1,"bottle"],
+  ["Sirka (Vinegar)",1,"bottle"],["Imli sauce",1,"bottle"],["Lemon juice (Mitchell's & bottle)",1,"bottle"],
+  ["Mayonnaise",1,"jar"],["Shehad (Honey)",1,"jar"],["Orange marmalade",1,"jar"],["Mitchell's achar (Pickle)",1,"jar"],
+  ["Olives & Mushrooms (Canned)",1,"tin"]]],
+ ["Tea & Drinks", [
+  ["Patti (Tea: Tapal Danedar & economy packs)",1,"pack"],["Green tea",1,"jar"],["Coffee (Sachets & general)",1,"pack"],
+  ["Rooh Afza",1,"bottle"],["Sandal sharbat",1,"bottle"],["Limopani",1,"pack"],["Mango Tang",1,"pack"],
+  ["Complan (Strawberry)",1,"box"],["Milo",1,"pack"],["Cold drinks (Pepsi, Coke, Mirinda, Sprite, Dew)",2,"bottle"],
+  ["Quince mango juice",1,"pack"],["Drinking water bottles",12,"bottle"],["Mix fruit tin",1,"tin"]]],
+ ["Personal Care", [
+  ["Sunsilk Jojoba (Pink) shampoo",1,"bottle"],["Pantene Goodbye Summer Frizz conditioner",1,"bottle"],
+  ["Dove soap",3,"pcs"],["Capri soap",3,"pcs"],["Lux soap",3,"pcs"],["Toothpaste (Sensodyne, Colgate, General)",1,"pcs"],
+  ["Gillette razors",1,"pack"],["Hair color (Deep Blonde, Medium Brown Keune, Chocolate Brown)",1,"box"],
+  ["Hair color developer (Volume 20 & 40)",1,"bottle"],["Pond's cold cream & Super Light gel",1,"pcs"],
+  ["Neutrogena Hydro Boost gel",1,"pcs"],["Hydrating mask",1,"pcs"],["Glycerin & Rosewater spray / Pure rosewater",1,"bottle"],
+  ["L'Oréal Glycolic & Hyaluronic acid serums",1,"bottle"],["Skin A cream",1,"pcs"],["Multani mitti",1,"pack"],
+  ["Aloe vera gel",1,"pcs"],["Hamna anti-perspirant / Deodorant",1,"pcs"],["Aftershave lotion",1,"bottle"],
+  ["Coconut oil & Almond oil (Hair)",1,"bottle"]]],
+ ["Pharmacy & Health", [
+  ["Magnesium glycinate",1,"box"],["Zinc",1,"box"],["Vitamin E (400 mg)",1,"box"],["Panadol / Panadol Extra",1,"pack"],
+  ["ORS",5,"sachet"],["Novidat (500 mg tablets)",1,"pack"],["Rifaximin tablets",1,"pack"],["Vermox tablets",1,"pack"],
+  ["Kestine",1,"pack"],["Vibramycin (100 mg tablets)",1,"pack"],["Fluconazole capsule",1,"pack"],
+  ["Systane eye drops (Green bottle)",1,"bottle"],["Dettol antiseptic",1,"bottle"],["Sanitary pads",1,"pack"]]],
+ ["Laundry & Cleaning", [
+  ["Surf / Detergent (Imtiaz 5 kg, Surf Excel, General)",1,"pack"],["Vim (Liquid, Bar & Powder)",1,"pcs"],
+  ["Bartan ka sabun (Dish soap)",1,"pcs"],["Bleach (Robin & General, large bottles)",1,"bottle"],
+  ["Tezaab (Tiger / White, acid bottles)",1,"bottle"],["Dettol tile cleaner & Dettol large",1,"bottle"],["Harpic",1,"bottle"],
+  ["All-purpose cleaner spray",1,"bottle"],["Insect killer spray / Mosquito coil",1,"pcs"],["Air freshener",1,"pcs"],
+  ["Kalaf / Starch spray",1,"bottle"],["Robin powder / liquid",1,"pack"],["Phenyl balls (Fanyal goliyan)",1,"pack"]]],
+ ["Tissues & Cleaning Tools", [
+  ["Tissue rolls",6,"roll"],["Tissue boxes",2,"box"],["Kitchen rolls",2,"roll"],["Kitchen / Dish sponges",1,"pack"],
+  ["Shoppers (Plastic bags, 0.5 kg)",1,"pack"],["Sponge cloth & Glass cleaning cloths (Microfiber)",1,"pack"],
+  ["Bottle cleaning brush",1,"pcs"],["Steel-handle broom brush & Jharoo",1,"pcs"],["Mop",1,"pcs"],["Wiper",1,"pcs"],
+  ["Commode brush",1,"pcs"]]],
+ ["Home & Kitchenware", [
+  ["Dastarkhwan (Large floor spread)",1,"pcs"],["Fridge water bottles",6,"pcs"],["Hangers",1,"dozen"],["Glass set (Plain)",1,"box"],
+  ["Black quarter plates",6,"pcs"],["Large tea mugs",6,"pcs"],["Deep salan plates",6,"pcs"],
+  ["Table spoons, small forks, soup spoons",1,"dozen"],["Pressure cooker weight",1,"pcs"],["Match boxes",1,"pack"],
+  ["Double tape",1,"pcs"],["White glue & Elfy",1,"pcs"],["Kerosene oil (Mitti ka tail)",1,"L"],["AA / AAA cells",1,"pack"],
+  ["Hair catchers (Maroon & Brown)",1,"pack"],["Jewelry stoppers & Safety pins",1,"pack"],
+  ["Sewing thread (Black, White, Off-white, Sky blue)",4,"pcs"],["Elastic (Lastic)",1,"pcs"],["Coal",5,"kg"],
+  ["Plug for pedestal fan",1,"pcs"],["Sabzi wali churi (Vegetable knife)",1,"pcs"]]],
+ ["Reminders", [
+  ["Dhobi se kapray",0,"","r1"],["Paani ki bottles",0,"","r2"]]]
+];
+
+const KEY = "mamas_grocery_v3", THEME_KEY = "mamas_grocery_theme", OPEN_KEY = "mamas_grocery_open";
+const ls = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+
+function buildDefaults(){
+  return DEFAULTS.map(([name, items], ci) => ({
+    id: "c" + (ci + 1), name,
+    items: (() => { let k = 0; return items.map(([n, q, u, xid]) => ({ id: xid || ("c" + (ci + 1) + "i" + (++k)), name: n, qty: q, unit: u, def: q, note: "", checked: false })); })()
+  }));
+}
+
+let deletedIds = new Set();  // default items/categories Mama deleted, so updates don't bring them back
+let cats = load();
+let view = "all";          // "all" | "list"
+let search = "";
+let open = new Set(JSON.parse(ls.get(OPEN_KEY) || "[]"));
+let editing = null;        // { catId, itemId } or null
+let confirmFn = null, askFn = null;
+
+function load(){
+  let d = null;
+  try{
+    const raw = ls.get(KEY);
+    if (raw){
+      const p = JSON.parse(raw);
+      if (Array.isArray(p)) d = p;
+      else if (p && Array.isArray(p.cats)){ d = p.cats; deletedIds = new Set(p.deleted || []); }
+    }
+  }catch(e){}
+  if (!d) return buildDefaults();
+  mergeDefaults(d);
+  return d;
+}
+// Adds any default category or item that is missing from saved data (e.g. after an app update),
+// without touching Mama's own changes or bringing back things she deleted.
+function mergeDefaults(d){
+  const have = new Set();
+  d.forEach(c => c.items.forEach(i => have.add(i.id)));
+  buildDefaults().forEach((dc, ci) => {
+    if (deletedIds.has(dc.id)) return;
+    let c = d.find(x => x.id === dc.id);
+    dc.items.forEach((di, ii) => {
+      if (have.has(di.id) || deletedIds.has(di.id)) return;
+      if (!c){ c = { id: dc.id, name: dc.name, items: [] }; d.splice(Math.min(ci, d.length), 0, c); }
+      c.items.splice(Math.min(ii, c.items.length), 0, di);
+    });
+  });
+}
+function save(){ ls.set(KEY, JSON.stringify({ v: 2, cats, deleted: [...deletedIds] })); render(); }
+function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function findItem(itemId){
+  for (const c of cats){ const it = c.items.find(i => i.id === itemId); if (it) return { cat: c, item: it }; }
+  return null;
+}
+function stepFor(unit){ return unit === "g" ? 50 : unit === "ml" ? 100 : (unit === "kg" || unit === "L") ? 0.5 : 1; }
+function fmtQty(q){ return String(Math.round(q * 100) / 100); }
+function qtyLabel(it){ return it.unit ? fmtQty(it.qty) + " " + it.unit : ""; }
+function selectedCount(){ let n = 0; cats.forEach(c => c.items.forEach(i => { if (i.checked) n++; })); return n; }
+
+/* ---------- Theme ---------- */
+function isDark(){
+  const t = document.documentElement.getAttribute("data-theme");
+  if (t) return t === "dark";
+  return !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function applyTheme(t){
+  if (t) document.documentElement.setAttribute("data-theme", t);
+  $("themeBtn").textContent = isDark() ? "Switch to light mode" : "Switch to dark mode";
+}
+function toggleTheme(){ const t = isDark() ? "light" : "dark"; ls.set(THEME_KEY, t); applyTheme(t); }
+
+/* ---------- Rendering ---------- */
+const ICON_CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const ICON_MORE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+const ICON_CHEV = '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
+
+function rowHTML(it){
+  const meta = [it.checked ? "" : esc(qtyLabel(it)), it.note ? esc(it.note) : ""].filter(Boolean).join(" · ");
+  return '<div class="row' + (it.checked ? " on" : "") + '">' +
+    '<button class="pick" data-act="toggle" data-id="' + it.id + '" aria-pressed="' + it.checked + '">' +
+      '<span class="box">' + ICON_CHECK + '</span>' +
+      '<span class="txt"><span class="nm">' + esc(it.name) + '</span>' + (meta ? '<span class="meta">' + meta + '</span>' : "") + '</span>' +
+    '</button>' +
+    '<button class="more" data-act="edit" data-id="' + it.id + '" aria-label="Change ' + esc(it.name) + '">' + ICON_MORE + '</button>' +
+    (it.checked && it.unit ?
+      '<div class="step"><button data-act="dec" data-id="' + it.id + '" aria-label="Less">−</button>' +
+      '<span class="q">' + esc(qtyLabel(it)) + '</span>' +
+      '<button data-act="inc" data-id="' + it.id + '" aria-label="More">+</button></div>' : "") +
+  '</div>';
+}
+
+function matches(it, q){ return !q || (it.name + " " + (it.note || "")).toLowerCase().includes(q); }
+
+function render(){
+  const q = search.trim().toLowerCase();
+  const n = selectedCount();
+  let html = "";
+
+  html += sentBannerHTML(n);
+  if (view === "list"){
+    html += '<div class="listhead"><button class="linkbtn" data-act="view">‹ All items</button><h2>This list</h2>' +
+      (n ? '<button class="linkbtn danger" data-act="new-list">Start new list</button>' : "") + '</div>';
+    let any = false;
+    cats.forEach(c => {
+      const items = c.items.filter(i => i.checked && matches(i, q));
+      if (!items.length) return;
+      any = true;
+      html += '<section class="cat open"><div class="cat-title">' + esc(c.name) + '</div><div>' + items.map(rowHTML).join("") + '</div></section>';
+    });
+    if (!any) html += '<div class="empty"><p>' + (n ? "Nothing on the list matches “" + esc(search.trim()) + "”." : "Nothing on the list yet. Tap the items you need and they will show up here.") +
+      '</p><button class="btn primary" data-act="view">Go to all items</button></div>';
+  } else if (q){
+    let any = false;
+    cats.forEach(c => {
+      const items = c.items.filter(i => matches(i, q));
+      if (!items.length) return;
+      any = true;
+      html += '<section class="cat open"><div class="cat-title">' + esc(c.name) + '</div><div>' + items.map(rowHTML).join("") + '</div></section>';
+    });
+    if (!any) html += '<div class="empty"><p>No item called “' + esc(search.trim()) + '” yet.</p>' +
+      '<button class="btn primary" data-act="add-search">Add “' + esc(search.trim()) + '”</button></div>';
+  } else {
+    cats.forEach(c => {
+      const isOpen = open.has(c.id);
+      const sel = c.items.filter(i => i.checked).length;
+      html += '<section class="cat' + (isOpen ? " open" : "") + '">' +
+        '<button class="cat-h" data-act="cat" data-cid="' + c.id + '" aria-expanded="' + isOpen + '">' + ICON_CHEV +
+          '<span class="cat-n">' + esc(c.name) + '</span>' +
+          (sel ? '<span class="badge" aria-label="' + sel + ' picked">' + sel + '</span>' : "") +
+          '<span class="cat-c">' + c.items.length + '</span></button>' +
+        (isOpen ? '<div class="cat-b">' + (c.items.length ? c.items.map(rowHTML).join("") : '<div class="none">No items yet.</div>') +
+          '<div class="cat-f"><button class="linkbtn" data-act="add-here" data-cid="' + c.id + '">+ Add item here</button>' +
+          '<button class="linkbtn danger" data-act="del-cat" data-cid="' + c.id + '">Delete category</button></div></div>' : "") +
+      '</section>';
+    });
+    html += '<button class="linkbtn newcat" data-act="new-cat">+ New category</button>';
+  }
+
+  $("main").innerHTML = html;
+  $("countN").textContent = n;
+  $("countLbl").textContent = "on the list";
+  $("viewHint").textContent = view === "list" ? "See all items" : (n ? "Tap to view" : "Tick to add");
+  $("clrSearch").hidden = !search;
+  $("undoBtn").disabled = !past.length; $("redoBtn").disabled = !future.length;
+
+  const text = listText();
+  const send = $("sendBtn");
+  send.classList.toggle("off", !text);
+  send.href = text ? "https://wa.me/?text=" + encodeURIComponent(text) : "#";
+}
+
+/* ---------- List text ---------- */
+function listText(){
+  let body = "", total = 0;
+  cats.forEach(c => {
+    const items = c.items.filter(i => i.checked);
+    if (!items.length) return;
+    body += "*" + c.name.toUpperCase() + "*\n";
+    items.forEach(i => { body += "• " + i.name + (i.unit ? " — " + qtyLabel(i) : "") + (i.note ? " (" + i.note + ")" : "") + "\n"; total++; });
+    body += "\n";
+  });
+  if (!total) return "";
+  const d = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  return "🛒 *Mama's Grocery List*\n_" + d + " · " + total + " item" + (total === 1 ? "" : "s") + "_\n\n" + body.trim();
+}
+
+/* ---------- Sheets ---------- */
+function show(id){ $(id).hidden = false; }
+function closeAll(){ ["itemSheet","confirmSheet","askSheet","settingsSheet","copySheet"].forEach(id => $(id).hidden = true); editing = null; confirmFn = null; askFn = null; }
+
+function confirmBox(title, msg, okLabel, fn, danger){
+  $("cTitle").textContent = title; $("cMsg").textContent = msg;
+  const ok = $("cOk"); ok.textContent = okLabel; ok.className = "btn " + (danger ? "danger" : "primary");
+  $("confirmSheet").hidden = false;
+  confirmFn = fn;
+}
+function askBox(title, label, fn){
+  $("aTitle").textContent = title; $("aLabel").textContent = label; $("aInput").value = "";
+  askFn = fn; show("askSheet"); setTimeout(() => $("aInput").focus(), 50);
+}
+
+function fillCatSelect(selectedId){
+  const sel = $("fCat");
+  sel.innerHTML = cats.map(c => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join("") + '<option value="__new">+ New category…</option>';
+  sel.value = selectedId && cats.some(c => c.id === selectedId) ? selectedId : (cats[0] ? cats[0].id : "__new");
+  $("fNewCatWrap").hidden = sel.value !== "__new";
+}
+function fillUnits(u){
+  $("fUnit").innerHTML = UNITS.map(x => '<option value="' + x + '">' + x + '</option>').join("") + '<option value="">no amount</option>';
+  if (u && !UNITS.includes(u)) $("fUnit").insertAdjacentHTML("beforeend", '<option value="' + esc(u) + '">' + esc(u) + '</option>');
+  $("fUnit").value = u;
+}
+function openItemSheet(itemId, opts){
+  opts = opts || {};
+  const found = itemId ? findItem(itemId) : null;
+  editing = found ? { catId: found.cat.id, itemId } : null;
+  $("itemTitle").textContent = found ? "Change item" : "Add item";
+  $("fName").value = found ? found.item.name : (opts.name || "");
+  fillCatSelect(found ? found.cat.id : opts.catId);
+  $("fNewCat").value = "";
+  $("fQty").value = found ? fmtQty(found.item.qty) : "1";
+  fillUnits(found ? found.item.unit : "pcs");
+  $("fNote").value = found ? (found.item.note || "") : "";
+  $("fOn").checked = found ? found.item.checked : true;
+  $("fDelete").hidden = !found;
+  show("itemSheet");
+  if (!found && !opts.name) setTimeout(() => $("fName").focus(), 50);
+}
+
+function saveItem(e){
+  e.preventDefault();
+  const name = $("fName").value.trim();
+  if (!name){ toast("Type the item name first"); $("fName").focus(); return; }
+  if ($("fCat").value === "__new" && !$("fNewCat").value.trim()){ toast("Type the new category name"); $("fNewCat").focus(); return; }
+  commit((editing ? "Changed " : "Added ") + name);
+  let catId = $("fCat").value;
+  if (catId === "__new"){
+    const cn = $("fNewCat").value.trim();
+    if (!cn){ toast("Type the new category name"); $("fNewCat").focus(); return; }
+    const existing = cats.find(c => c.name.toLowerCase() === cn.toLowerCase());
+    if (existing) catId = existing.id;
+    else { const c = { id: uid("c"), name: cn, items: [] }; cats.push(c); catId = c.id; }
+  }
+  const qty = parseFloat($("fQty").value);
+  const unit = $("fUnit").value;
+  const note = $("fNote").value.trim();
+  const on = $("fOn").checked;
+  const target = cats.find(c => c.id === catId);
+
+  if (editing){
+    const found = findItem(editing.itemId);
+    if (found){
+      const it = found.item;
+      it.name = name; it.unit = unit; it.note = note; it.checked = on;
+      if (qty > 0){ it.qty = qty; if (!on) it.def = qty; }
+      if (found.cat.id !== catId){ found.cat.items.splice(found.cat.items.indexOf(it), 1); target.items.push(it); }
+    }
+  } else {
+    const q = qty > 0 ? qty : 1;
+    target.items.push({ id: uid("u"), name, qty: q, unit, def: q, note, checked: on });
+  }
+  open.add(catId); ls.set(OPEN_KEY, JSON.stringify([...open]));
+  closeAll(); save();
+  toast(on ? "Saved and on the list" : "Saved");
+}
+
+/* ---------- Copy ---------- */
+function legacyCopy(t){
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = t; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+    const ok = document.execCommand("copy"); ta.remove(); return ok;
+  }catch(e){ return false; }
+}
+function copyList(){
+  const t = listText();
+  if (!t){ toast("Tap some items first"); return; }
+  const fallback = () => { if (legacyCopy(t)){ markSent(); toast("List copied"); } else { $("copyText").value = t; show("copySheet"); } };
+  try{
+    navigator.clipboard.writeText(t).then(() => { markSent(); toast("List copied"); }, fallback);
+  }catch(e){ fallback(); }
+}
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function toast(msg, withUndo){
+  $("toastMsg").textContent = msg; $("toastUndo").hidden = !withUndo; $("toast").hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").hidden = true, withUndo ? 5000 : 2200);
+}
+
+/* ---------- Undo / redo ---------- */
+let past = [], future = [], lastKey = "", lastAt = 0;
+function snapshot(){ return JSON.stringify({ cats, deleted: [...deletedIds] }); }
+// Call just before changing data. Quick repeated taps on the same +/- count as one step.
+function commit(label, key){
+  const now = Date.now();
+  if (key && key === lastKey && now - lastAt < 1500 && past.length){ lastAt = now; future = []; return; }
+  past.push({ state: snapshot(), label }); if (past.length > 100) past.shift();
+  future = []; lastKey = key || ""; lastAt = now;
+}
+function restore(state){ const o = JSON.parse(state); cats = o.cats; deletedIds = new Set(o.deleted || []); lastKey = ""; save(); }
+function undo(){
+  const e = past.pop(); if (!e){ toast("Nothing to undo"); return; }
+  future.push({ state: snapshot(), label: e.label }); restore(e.state); toast("Undone: " + e.label);
+}
+function redo(){
+  const e = future.pop(); if (!e){ toast("Nothing to redo"); return; }
+  past.push({ state: snapshot(), label: e.label }); restore(e.state); toast("Redone: " + e.label);
+}
+
+/* ---------- New list, sent reminder, where she left off ---------- */
+const META_KEY = "mamas_grocery_meta", UI_KEY = "mamas_grocery_ui";
+let meta = {};
+try{ meta = JSON.parse(ls.get(META_KEY) || "{}") || {}; }catch(e){ meta = {}; }
+function saveMeta(){ ls.set(META_KEY, JSON.stringify(meta)); }
+function markSent(){ meta.sentAt = Date.now(); meta.dismissed = null; saveMeta(); }
+function whenText(t){
+  const d = new Date(t), now = new Date();
+  const time = d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true });
+  const day = x => x.toDateString();
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (day(d) === day(now)) return "today at " + time;
+  if (day(d) === day(y)) return "yesterday at " + time;
+  return "on " + d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+function sentBannerHTML(n){
+  if (!meta.sentAt || !n || meta.dismissed === meta.sentAt || Date.now() - meta.sentAt < 5 * 60 * 1000) return "";
+  return '<div class="banner"><p><b>You sent this list ' + esc(whenText(meta.sentAt)) + '.</b> Start a fresh list, or keep adding to this one?</p>' +
+    '<div class="actions"><button class="btn primary" data-act="new-list">Start new list</button>' +
+    '<button class="btn ghost" data-act="keep-list">Keep this list</button></div></div>';
+}
+function newList(){
+  const n = selectedCount();
+  if (!n){ toast("The list is already empty"); return; }
+  commit("Started a new list");
+  cats.forEach(c => c.items.forEach(i => { if (i.checked){ i.checked = false; i.qty = i.def != null ? i.def : i.qty; } }));
+  meta.sentAt = null; meta.dismissed = null; saveMeta();
+  view = "all"; save(); saveUI(); window.scrollTo(0, 0);
+  toast("New list started", true);
+}
+function saveUI(){ ls.set(UI_KEY, JSON.stringify({ view, y: Math.round(window.scrollY || 0) })); }
+
+/* ---------- Events ---------- */
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-act]");
+  if (!el){
+    if (e.target.classList.contains("ov")) closeAll();
+    return;
+  }
+  const act = el.dataset.act, id = el.dataset.id, cid = el.dataset.cid;
+  const f = id ? findItem(id) : null;
+
+  switch (act){
+    case "toggle":
+      if (f){ commit((f.item.checked ? "Unticked " : "Ticked ") + f.item.name); f.item.checked = !f.item.checked; if (!f.item.checked) f.item.qty = f.item.def != null ? f.item.def : f.item.qty; save(); }
+      break;
+    case "inc": case "dec":
+      if (f){
+        const s = stepFor(f.item.unit);
+        let q = f.item.qty + (act === "inc" ? s : -s);
+        q = Math.round(q * 100) / 100;
+        if (q < s){ if (act === "dec" && f.item.qty <= s){ toast("Untick the item to remove it"); return; } q = s; }
+        commit("Amount of " + f.item.name, "q:" + f.item.id); f.item.qty = q; save();
+      }
+      break;
+    case "edit": openItemSheet(id); break;
+    case "add": openItemSheet(null); break;
+    case "add-here": openItemSheet(null, { catId: cid }); break;
+    case "add-search": openItemSheet(null, { name: search.trim() }); break;
+    case "cat":
+      open.has(cid) ? open.delete(cid) : open.add(cid); $("toast").hidden = true;
+      ls.set(OPEN_KEY, JSON.stringify([...open])); render();
+      break;
+    case "del-cat": {
+      const c = cats.find(x => x.id === cid); if (!c) break;
+      confirmBox("Delete “" + c.name + "”?", "This removes the category and all " + c.items.length + " items in it.", "Delete category", () => {
+        commit("Deleted " + c.name); deletedIds.add(cid); c.items.forEach(i => deletedIds.add(i.id)); cats = cats.filter(x => x.id !== cid); open.delete(cid); save(); toast("Category deleted", true);
+      }, true);
+      break;
+    }
+    case "delete-item": {
+      const target = editing && findItem(editing.itemId); if (!target) break;
+      const itemId = target.item.id, nm = target.item.name;
+      $("itemSheet").hidden = true;
+      confirmBox("Delete “" + nm + "”?", "It will be removed from the app. You can add it again later.", "Delete item", () => {
+        commit("Deleted " + nm); const g = findItem(itemId); if (g) g.cat.items.splice(g.cat.items.indexOf(g.item), 1); deletedIds.add(itemId); save(); toast("Item deleted", true);
+      }, true);
+      break;
+    }
+    case "new-cat":
+      askBox("New category", "Category name", name => {
+        if (cats.some(c => c.name.toLowerCase() === name.toLowerCase())){ toast("That category already exists"); return; }
+        commit("Added category " + name); const c = { id: uid("c"), name, items: [] }; cats.push(c); open.add(c.id); ls.set(OPEN_KEY, JSON.stringify([...open])); save();
+      });
+      break;
+    case "confirm-ok": { const fn = confirmFn; closeAll(); if (fn) fn(); break; }
+    case "close": closeAll(); break;
+    case "view":
+      view = view === "list" ? "all" : "list"; render(); window.scrollTo(0, 0); saveUI();
+      break;
+    case "new-list": newList(); break;
+    case "keep-list": meta.dismissed = meta.sentAt; saveMeta(); render(); break;
+    case "undo": undo(); break;
+    case "redo": redo(); break;
+    case "copy": copyList(); break;
+    case "theme": toggleTheme(); break;
+    case "settings":
+      show("settingsSheet");
+      break;
+    case "reset":
+      $("settingsSheet").hidden = true;
+      confirmBox("Reset all items?", "This puts back Mama's default list and removes anything added or changed.", "Reset", () => {
+        commit("Reset all items"); cats = buildDefaults(); deletedIds = new Set(); open = new Set(); ls.set(OPEN_KEY, "[]"); save(); toast("All items reset", true);
+      }, true);
+      break;
+    case "clear-search":
+      search = ""; $("search").value = ""; render(); $("search").focus();
+      break;
+  }
+});
+
+$("sendBtn").addEventListener("click", e => {
+  if (!listText()){ e.preventDefault(); e.stopPropagation(); toast("Tap some items first"); return; }
+  markSent(); saveUI();
+});
+$("search").addEventListener("input", e => { search = e.target.value; render(); });
+$("fCat").addEventListener("change", e => {
+  $("fNewCatWrap").hidden = e.target.value !== "__new";
+  if (e.target.value === "__new") $("fNewCat").focus();
+});
+$("fUnit").addEventListener("change", e => {
+  // Sensible starting amount when switching between g and kg
+  const q = parseFloat($("fQty").value) || 0;
+  if (e.target.value === "g" && q < 10) $("fQty").value = 250;
+  if ((e.target.value === "kg" || e.target.value === "L") && q >= 50) $("fQty").value = 1;
+});
+$("itemForm").addEventListener("submit", saveItem);
+$("askForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("aInput").value.trim(); if (!v){ $("aInput").focus(); return; }
+  const fn = askFn; closeAll(); if (fn) fn(v);
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeAll();
+  const typing = /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ""));
+  if (!typing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z"){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  if (!typing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y"){ e.preventDefault(); redo(); }
+});
+let scrollTimer;
+window.addEventListener("scroll", () => { clearTimeout(scrollTimer); scrollTimer = setTimeout(saveUI, 250); }, { passive: true });
+window.addEventListener("pagehide", saveUI);
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveUI(); else render(); });
+
+applyTheme(ls.get(THEME_KEY));
+if (window.matchMedia){ try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => applyTheme(null)); }catch(e){} }
+let ui = {};
+try{ ui = JSON.parse(ls.get(UI_KEY) || "{}") || {}; }catch(e){ ui = {}; }
+if (ui.view === "list" && selectedCount()) view = "list";
+render();
+if (ui.y) requestAnimationFrame(() => window.scrollTo(0, ui.y));
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) { window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
+// Ask the phone not to clear Mama's saved list when storage runs low.
+if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(function(){}); }
+</script>
+</body>
+</html>
